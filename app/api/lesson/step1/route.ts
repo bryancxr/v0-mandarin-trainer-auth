@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
 Context: ${context}
 What they want to say: ${input}
 
-Task: Summarize the user's intent, tone, and context in English in ≤300 tokens. Focus on:
+Task: Summarize the user's intent, tone, and context in English in ≤300 tokens using a conversational, 2nd person perspective. Start with "I see that you are trying to..." and end with "Is this correct?". Focus on:
 1. The specific situation and cultural context
 2. The exact meaning they want to convey
 3. Any nuances, formality levels, or cultural considerations needed
 
-Provide a clear, concise summary of their intent.`
+Provide a clear, concise summary of their intent in a conversational tone.`
 
     console.log("[v0] Calling Gemini with prompt length:", prompt.length)
     console.log("[v0] Using API key:", process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Present" : "Missing")
@@ -42,7 +42,6 @@ Provide a clear, concise summary of their intent.`
     const { text } = await generateText({
       model: google("gemini-2.0-flash-exp"), // Using the experimental model that should be available
       prompt,
-      maxTokens: 300,
     })
 
     console.log("[v0] Gemini response received:", {

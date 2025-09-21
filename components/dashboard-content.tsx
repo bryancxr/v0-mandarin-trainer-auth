@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { BookOpen, Star, TrendingUp, Calendar, LogOut, User } from "lucide-react"
+import { BookOpen, Star, TrendingUp, Calendar, LogOut, User, Play, Eye, History, Settings } from "lucide-react"
 import { useState } from "react"
 
 interface DashboardContentProps {
@@ -45,17 +45,17 @@ export default function DashboardContent({ user, profile, lessons }: DashboardCo
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-foreground">
             Welcome back, {profile?.display_name || user.email?.split("@")[0]}!
           </h1>
-          <p className="text-gray-600 mt-1">Continue your Mandarin learning journey</p>
+          <p className="text-muted-foreground mt-1">Continue your Mandarin learning journey</p>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant="outline" className="px-3 py-1">
+          <Badge variant="outline" className="px-3 py-1 bg-card/50 border-border">
             <User className="h-3 w-3 mr-1" />
             {profile?.learning_level || "Beginner"}
           </Badge>
-          <Button variant="outline" onClick={handleLogout} disabled={isLoggingOut}>
+          <Button variant="outline" onClick={handleLogout} disabled={isLoggingOut} className="border-border hover:bg-accent">
             <LogOut className="h-4 w-4 mr-2" />
             {isLoggingOut ? "Signing out..." : "Sign Out"}
           </Button>
@@ -101,11 +101,34 @@ export default function DashboardContent({ user, profile, lessons }: DashboardCo
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-8">
-        <Button asChild size="lg" className="flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <Button asChild size="lg" className="h-16 bg-primary hover:bg-primary/90 text-primary-foreground">
           <Link href="/lesson">
-            <BookOpen className="h-5 w-5 mr-2" />
-            Start New Lesson
+            <Play className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-semibold">Start New Lesson</div>
+              <div className="text-sm opacity-90">Begin learning</div>
+            </div>
+          </Link>
+        </Button>
+        
+        <Button asChild size="lg" variant="outline" className="h-16 border-border hover:bg-accent">
+          <Link href="/lesson">
+            <History className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-semibold">View All Lessons</div>
+              <div className="text-sm opacity-70">See your progress</div>
+            </div>
+          </Link>
+        </Button>
+        
+        <Button asChild size="lg" variant="outline" className="h-16 border-border hover:bg-accent sm:col-span-2 lg:col-span-1">
+          <Link href="/dashboard">
+            <Settings className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-semibold">Settings</div>
+              <div className="text-sm opacity-70">Manage preferences</div>
+            </div>
           </Link>
         </Button>
       </div>
@@ -119,11 +142,14 @@ export default function DashboardContent({ user, profile, lessons }: DashboardCo
         <CardContent>
           {lessons.length === 0 ? (
             <div className="text-center py-8">
-              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons yet</h3>
-              <p className="text-gray-600 mb-4">Start your first lesson to begin learning Mandarin!</p>
-              <Button asChild>
-                <Link href="/lesson">Start Your First Lesson</Link>
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No lessons yet</h3>
+              <p className="text-muted-foreground mb-4">Start your first lesson to begin learning Mandarin!</p>
+              <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Link href="/lesson">
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Your First Lesson
+                </Link>
               </Button>
             </div>
           ) : (
@@ -131,41 +157,47 @@ export default function DashboardContent({ user, profile, lessons }: DashboardCo
               {lessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-medium text-gray-900 truncate max-w-md">
+                      <h4 className="font-medium text-foreground truncate max-w-md">
                         {lesson.step1_context.substring(0, 60)}
                         {lesson.step1_context.length > 60 ? "..." : ""}
                       </h4>
                       {lesson.rating && (
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">{lesson.rating}</span>
+                          <span className="text-sm font-medium text-foreground">{lesson.rating}</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDate(lesson.created_at)}
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-border">
                         {lesson.step3_corrected ? "Completed" : "In Progress"}
                       </Badge>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/lesson/${lesson.id}`}>View Details</Link>
+                  <Button variant="ghost" size="sm" asChild className="hover:bg-accent">
+                    <Link href={`/lesson/${lesson.id}`}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Link>
                   </Button>
                 </div>
               ))}
 
               {lessons.length >= 10 && (
                 <div className="text-center pt-4">
-                  <Button variant="outline" asChild>
-                    <Link href="/lessons">View All Lessons</Link>
+                  <Button variant="outline" asChild className="border-border hover:bg-accent">
+                    <Link href="/lessons">
+                      <History className="h-4 w-4 mr-2" />
+                      View All Lessons
+                    </Link>
                   </Button>
                 </div>
               )}

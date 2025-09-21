@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const lessons = lessonsResult.data || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <DashboardContent user={data.user} profile={profile} lessons={lessons} />
     </div>
   )

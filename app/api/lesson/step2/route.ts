@@ -36,10 +36,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to update lesson" }, { status: 500 })
     }
 
-    const finalIntent = confirmed ? input : clarification
-    console.log("[v0] Final intent for Gemini:", finalIntent)
+    // If user confirmed, proceed to generate Step 3 content
+    if (confirmed) {
+      const finalIntent = input
+      console.log("[v0] Final intent for Gemini:", finalIntent)
 
-    const prompt = `You are an expert Mandarin language tutor. A student wants to express the following:
+      const prompt = `You are an expert Mandarin language tutor. A student wants to express the following:
 
 Context: ${context}
 Intent: ${finalIntent}
@@ -62,58 +64,64 @@ Format your response as JSON:
   "alternative2_notes": "grammar/vocab explanation"
 }`
 
-    console.log("[v0] Calling Gemini with prompt length:", prompt.length)
+      console.log("[v0] Calling Gemini with prompt length:", prompt.length)
 
-    const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
-      prompt,
-      maxTokens: 800,
-    })
+      const { text } = await generateText({
+        model: google("gemini-2.5-flash"),
+        prompt,
+      })
 
-    console.log("[v0] Gemini raw response:", text)
+      console.log("[v0] Gemini raw response:", text)
 
-    let jsonText = text.trim()
-    if (jsonText.startsWith("```json")) {
-      jsonText = jsonText.replace(/^```json\s*/, "").replace(/\s*```$/, "")
-    } else if (jsonText.startsWith("```")) {
-      jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "")
+      let jsonText = text.trim()
+      if (jsonText.startsWith("```json")) {
+        jsonText = jsonText.replace(/^```json\s*/, "").replace(/\s*```$/, "")
+      } else if (jsonText.startsWith("```")) {
+        jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "")
+      }
+
+      let response
+      try {
+        response = JSON.parse(jsonText)
+        console.log("[v0] Parsed Gemini response:", response)
+      } catch (parseError) {
+        console.error("[v0] JSON parsing failed:", parseError)
+        console.error("[v0] Raw text that failed to parse:", jsonText)
+        return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 })
+      }
+
+      const step3UpdateData = {
+        step3_corrected: response.corrected,
+        step3_notes: response.notes,
+        step3_alternative1: response.alternative1,
+        step3_alternative1_notes: response.alternative1_notes,
+        step3_alternative2: response.alternative2,
+        step3_alternative2_notes: response.alternative2_notes,
+      }
+
+      console.log("[v0] Updating database with step3 data:", step3UpdateData)
+
+      const { error: step3Error } = await supabase
+        .from("lessons")
+        .update(step3UpdateData)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+
+      if (step3Error) {
+        console.error("Step3 database update error:", step3Error)
+        return NextResponse.json({ error: "Failed to save corrections" }, { status: 500 })
+      }
+
+      console.log("[v0] Step2 API returning response:", response)
+      return NextResponse.json(response)
+    } else {
+      // If user provided clarification, return a signal to regenerate AI understanding
+      return NextResponse.json({ 
+        needsClarification: true,
+        clarification: clarification 
+      })
     }
-
-    let response
-    try {
-      response = JSON.parse(jsonText)
-      console.log("[v0] Parsed Gemini response:", response)
-    } catch (parseError) {
-      console.error("[v0] JSON parsing failed:", parseError)
-      console.error("[v0] Raw text that failed to parse:", jsonText)
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 })
-    }
-
-    const step3UpdateData = {
-      step3_corrected: response.corrected,
-      step3_notes: response.notes,
-      step3_alternative1: response.alternative1,
-      step3_alternative1_notes: response.alternative1_notes,
-      step3_alternative2: response.alternative2,
-      step3_alternative2_notes: response.alternative2_notes,
-    }
-
-    console.log("[v0] Updating database with step3 data:", step3UpdateData)
-
-    const { error: step3Error } = await supabase
-      .from("lessons")
-      .update(step3UpdateData)
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-
-    if (step3Error) {
-      console.error("Step3 database update error:", step3Error)
-      return NextResponse.json({ error: "Failed to save corrections" }, { status: 500 })
-    }
-
-    console.log("[v0] Step2 API returning response:", response)
-    return NextResponse.json(response)
   } catch (error) {
     console.error("[v0] Error in step2 API:", error)
     return NextResponse.json({ error: "Failed to process request" }, { status: 500 })
